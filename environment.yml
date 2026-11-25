@@ -1,0 +1,14 @@
+name: rainy-esn
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - numpy=1.26
+  - scipy
+  - scikit-learn
+  - scikit-optimize
+  - matplotlib
+  - h5py
+  - docopt
+  - scikit-image
+  - fastdtw

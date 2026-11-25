@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+
+# Local simulation data and generated results
+/scratch/
+/input_data/
+/results/
+/images/
+*.h5
+*.hdf5
+*.log
+*.mat
+
+# Editor and operating-system files
+.DS_Store
+Thumbs.db
+.vscode/

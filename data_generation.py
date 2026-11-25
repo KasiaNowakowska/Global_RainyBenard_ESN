@@ -60,7 +60,7 @@ RHt = float(args['--RHt'])
 simtime = float(args['--simtime'])
 restart_file_path = args['--restartfile']
 
-data_dir = 'scratch/edited_new_file_Ra{0:.2e}_RH0{1:}_RHb{2:}_RHt{3:}_gamma{4:}_nx{5:}_nz{6:}_Lx{7:}_simtime{8:}'.format(float(args['--Rayleigh']), args['--RH0'], args['--RHb'], args['--RHt'], args['--gamma'], args['--nx'], args['--nz'], args['--Lx'], args['--simtime'])
+data_dir = 'scratch/RainyBenard_Ra{0:.2e}_RH0{1:}_RHb{2:}_RHt{3:}_gamma{4:}_nx{5:}_nz{6:}_Lx{7:}_simtime{8:}'.format(float(args['--Rayleigh']), args['--RH0'], args['--RHb'], args['--RHt'], args['--gamma'], args['--nx'], args['--nz'], args['--Lx'], args['--simtime'])
 
 import dedalus.tools.logging as dedalus_logging
 dedalus_logging.add_file_handler(data_dir+'/logs/dedalus_log', 'DEBUG')
@@ -69,7 +69,7 @@ import dedalus.public as de
 from dedalus.extras import flow_tools
 
 
-logger.info('α={:}, β={:}, γ={:}, Ra={:.2e}'.format(alpha,beta,gamma, Rayleigh))
+logger.info('α={:}, β={:}, γ={:}, Ra={:.2e}'.format(alpha,beta,gamma,Rayleigh))
 
 run_time = 1200
 run_time_iter = 200
@@ -109,15 +109,7 @@ tau_b2 = dist.Field(name='tau_b2', bases=xb)
 tau_q1 = dist.Field(name='tau_q1', bases=xb)
 tau_q2 = dist.Field(name='tau_q2', bases=xb)
 
-''' new lift bases
-lift_basis = zb.derivative_basis(1)
-lift = lambda A: de.Lift(A, lift_basis, -1)
-lift_basis2 = zb.derivative_basis(2)
-lift2 = lambda A: de.Lift(A, lift_basis2, -1)
-lift2_2 = lambda A: de.Lift(A, lift_basis2, -2)
-'''
-
-# old lift bases
+# lift bases
 zb1 = zb.clone_with(a=zb.a+1, b=zb.b+1)
 zb2 = zb.clone_with(a=zb.a+2, b=zb.b+2)
 lift1 = lambda A, n: de.Lift(A, zb1, n)
@@ -141,28 +133,7 @@ cross = lambda A,B: de.CrossProduct(A, B)
 
 omega = curl(u)
 
-
-''' IVP problem with new bases
-vars = [p, u, b, q, tau_p, tau_u1, tau_u2, tau_b1, tau_b2, tau_q1, tau_q2]
-problem = de.IVP(vars, namespace=locals())
-
-problem.add_equation('div(u) + lift(tau_p) = 0')
-problem.add_equation('dt(b) - P*lap(b) + lift2_2(tau_b1) + lift2(tau_b2) = - (u@grad(b)) + gamma/tau*((q-qs)*H(q-qs))')
-problem.add_equation('dt(u) - PdR*lap(u) + grad(p) - PtR*b*ez + lift2_2(tau_u1) + lift2(tau_u2) = cross(u, omega)')
-problem.add_equation('dt(q) - S*lap(q) + lift2_2(tau_q1) + lift2(tau_q2) = - (u@grad(q)) - 1/tau*((q-qs)*H(q-qs))')
-problem.add_equation('b(z=0) = T1')
-problem.add_equation('b(z=Lz) = beta + T1 - 1') # technically β*Lz
-problem.add_equation('q(z=0) = RHb')
-#problem.add_equation('q(z=Lz) = np.exp(alpha*(T1-1))') #saturated upper boundary
-problem.add_equation('q(z=Lz) = RHt*np.exp(alpha*(T1-1))') #unsaturated upper boundary - matches IC
-problem.add_equation('u(z=0) = 0')
-problem.add_equation('u(z=Lz) = 0')
-problem.add_equation('integ(p) = 0')
-#problem.add_equation('dt(q) = dqdt')
-'''
-
-
-#IVP problem with old bases
+#IVP problem
 vars = [p, u, b, q, tau_p, tau_u1, tau_u2, tau_b1, tau_b2, tau_q1, tau_q2]
 problem = de.IVP(vars, namespace=locals())
 

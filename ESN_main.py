@@ -1,13 +1,14 @@
 """
 python script for ESN.
 
-Usage: ESN.py [--input_path=<input_path> --output_path=<output_path> --hyperparam_file=<hyperparam_file> --config_number=<config_number>]
+Usage: ESN.py [--input_path=<input_path> --output_path=<output_path> --hyperparam_file=<hyperparam_file> --config_number=<config_number> --data_suffix=<data_suffix>]
 
 Options:
     --input_path=<input_path>            file path to use for data
     --output_path=<output_path>          file path to save images output [default: ./images]
     --hyperparam_file=<hyperparam_file>  hyperparameters for ESN
     --config_number=<config_number>      config number file
+    --data_suffix=<data_suffix>          suffix used by q, KE, and time arrays [default: 5000_30000]
 """
 
 print('load packages')
@@ -30,7 +31,7 @@ from skopt.plots import plot_convergence
 from sklearn.preprocessing import StandardScaler
 import sys
 sys.stdout.reconfigure(line_buffering=True)
-from scipy.sparse.linalg.eigen.arpack import ArpackNoConvergence  # Import the exception
+from scipy.sparse.linalg import ArpackNoConvergence
 
 from docopt import docopt
 args = docopt(__doc__)
@@ -39,14 +40,18 @@ import json
 
 #global tikh_opt, k, ti, tikh, U_washout, U_tv, Y_tv, U, N_in, N_fw, N_washout, N_val, N_units
 
-exec(open("Val_Functions.py").read())
-exec(open("Functions.py").read())
+script_dir = os.path.dirname(os.path.abspath(__file__))
+with open(os.path.join(script_dir, "Val_Functions.py"), encoding="utf-8") as functions_file:
+    exec(functions_file.read())
+with open(os.path.join(script_dir, "Functions.py"), encoding="utf-8") as functions_file:
+    exec(functions_file.read())
 print('run functions files')
 
 input_path = args['--input_path']
 output_path = args['--output_path']
 hyperparam_file = args['--hyperparam_file']
 config_number= args['--config_number']
+data_suffix = args['--data_suffix']
 
 if not os.path.exists(output_path):
     os.makedirs(output_path)
@@ -155,9 +160,22 @@ def ss_inverse_transform(data, scaler):
     return data_unscaled
 
 #### Load Data ####
-q = np.load(input_path + 'q5000_30000.npy')
-ke = np.load(input_path + 'KE5000_30000.npy')
-total_time = np.load(input_path + 'total_time5000_30000.npy')
+q = np.load(os.path.join(input_path, f'q{data_suffix}.npy'))
+ke = np.load(os.path.join(input_path, f'KE{data_suffix}.npy'))
+total_time = np.load(os.path.join(input_path, f'total_time{data_suffix}.npy'))
+
+if q.ndim != 1 or ke.ndim != 1 or total_time.ndim != 1:
+    raise ValueError("q, KE, and total_time inputs must be one-dimensional arrays")
+if not (len(q) == len(ke) == len(total_time)):
+    raise ValueError(
+        "q, KE, and total_time input arrays must have matching lengths"
+    )
+if not (
+    np.all(np.isfinite(q))
+    and np.all(np.isfinite(ke))
+    and np.all(np.isfinite(total_time))
+):
+    raise ValueError("q, KE, and total_time input arrays must contain only finite values")
 
 # Reshape the arrays into column vectors
 ke_column = ke.reshape(len(ke), 1)
@@ -182,6 +200,13 @@ N_train   = train_len*N_lyap #600
 N_val     = val_len*N_lyap #45
 N_test    = test_len*N_lyap #45
 dim       = 2
+
+required_samples = N_washout + N_train + n_tests * N_test
+if len(U) < required_samples:
+    raise ValueError(
+        f"Input data has {len(U)} samples; the configured washout, training, "
+        f"and {n_tests} test intervals require at least {required_samples}"
+    )
 
 # compute normalization factor (range component-wise)
 U_data = U[:N_washout+N_train].copy()
@@ -317,6 +342,7 @@ N_fw     = N_forward*N_lyap
 N_fo     = (N_train-N_val-N_washout)//N_fw + 1 
 #N_fo     = 33                     # number of validation intervals
 N_in     = N_washout                 # timesteps before the first validation interval (can't be 0 due to implementation)
+N_washout_val = N_washout
 #N_fw     = (N_train-N_val-N_washout)//(N_fo-1) # how many steps forward the validation interval is shifted (in this way they are evenly spaced)
 N_splits = 4                         # reduce memory requirement by increasing N_splits
 print('Number of folds', N_fo)

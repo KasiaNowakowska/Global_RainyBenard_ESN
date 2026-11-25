@@ -1,0 +1,19 @@
+{
+    "Nr": 250,
+    "N_train": 40,
+    "N_val": 3,
+    "N_test": 3,
+    "N_washout": 1,
+    "t_lyap": 500,
+    "normalisation": "on",
+    "ens": 100,
+    "ensemble_test": 3,
+    "n_tests": 3,
+    "grid_x": 6,
+    "grid_y": 6,
+    "added_points": 4,
+    "noise": 0.01,
+    "val": "RVC_Noise",
+    "N_forward": 1,
+    "alpha0": 0.25
+}
